@@ -3,7 +3,12 @@ import app from "./app";
 import { connectDB } from "./config/db";
 import { logger } from "./config/logger";
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT =
+  process.env.PORT !== undefined &&
+  process.env.PORT.trim() !== "" &&
+  !Number.isNaN(Number(process.env.PORT))
+    ? Number(process.env.PORT)
+    : 5000;
 
 const startServer = async (): Promise<void> => {
   try {
