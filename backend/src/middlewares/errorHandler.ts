@@ -5,6 +5,7 @@ export interface CustomError extends Error {
   statusCode?: number;
   status?: string;
   isOperational?: boolean;
+  type?: string;
 }
 
 export class AppError extends Error implements CustomError {
@@ -26,11 +27,27 @@ export const errorHandler = (
   err: CustomError,
   req: Request,
   res: Response,
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || 500;
-  const status = err.status || "error";
+  let statusCode = err.statusCode || 500;
+  let status = err.status || "error";
+  let message = err.message;
+  let isOperational = err.isOperational ?? false;
+
+  // Recognize JSON parser client errors (malformed JSON or payload too large)
+  if (err.type === "entity.parse.failed") {
+    statusCode = 400;
+    status = "fail";
+    message = "Invalid JSON payload in request body";
+    isOperational = true;
+  } else if (err.type === "entity.too.large") {
+    statusCode = 413;
+    status = "fail";
+    message = "Request payload exceeds size limit";
+    isOperational = true;
+  }
+
   const isDevelopment = process.env.NODE_ENV === "development";
 
   logger.error(
@@ -39,7 +56,7 @@ export const errorHandler = (
         name: err.name,
         message: err.message,
         stack: err.stack,
-        isOperational: err.isOperational ?? false,
+        isOperational,
       },
       req: {
         method: req.method,
@@ -49,10 +66,10 @@ export const errorHandler = (
     "Request Error Encountered"
   );
 
-  if (err.isOperational || isDevelopment) {
+  if (isOperational || isDevelopment) {
     res.status(statusCode).json({
       status,
-      message: err.message,
+      message,
       ...(isDevelopment && { stack: err.stack }),
     });
     return;
