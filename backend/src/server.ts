@@ -14,14 +14,18 @@ const startServer = async (): Promise<void> => {
   try {
     await connectDB();
 
-    app.listen(PORT, (err?: Error) => {
+    const server = app.listen(PORT, (err?: Error) => {
       if (err) {
         logger.error({ err }, `Failed to bind server to port ${PORT}`);
         process.exit(1);
       }
 
+      const address = server.address();
+      const actualPort =
+        typeof address === "object" && address !== null ? address.port : PORT;
+
       logger.info(
-        `Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`
+        `Server running on port ${actualPort} in ${process.env.NODE_ENV || "development"} mode`
       );
     });
   } catch (error: unknown) {
