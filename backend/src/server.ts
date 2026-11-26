@@ -12,6 +12,11 @@ const PORT =
 
 const startServer = async (): Promise<void> => {
   try {
+    if (!process.env.JWT_SECRET) {
+      logger.error("Configuration error: JWT_SECRET is not defined");
+      process.exit(1);
+    }
+
     await connectDB();
 
     const server = app.listen(PORT, (err?: Error) => {

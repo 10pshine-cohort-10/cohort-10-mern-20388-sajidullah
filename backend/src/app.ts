@@ -4,6 +4,7 @@ import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { logger } from "./config/logger";
 import { AppError, errorHandler } from "./middlewares/errorHandler";
+import authRoutes from "./routes/auth.routes";
 
 const app: Application = express();
 
@@ -26,6 +27,8 @@ app.get("/api/health", (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use("/api/auth", authRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
