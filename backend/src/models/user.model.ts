@@ -31,6 +31,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
+      validate: {
+        validator: (val: string): boolean => !bcrypt.truncates(val),
+        message: "Password cannot exceed 72 bytes",
+      },
       select: false,
     },
   },
@@ -40,15 +44,23 @@ const userSchema = new Schema<IUser>(
 );
 
 userSchema.pre("save", async function () {
-  if (!this.isModified("password") || !this.password) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  try {
+    if (!this.isModified("password") || !this.password) return;
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error: unknown) {
+    throw error;
+  }
 });
 
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error: unknown) {
+    throw error;
+  }
 };
 
 export const User = model<IUser>("User", userSchema);
